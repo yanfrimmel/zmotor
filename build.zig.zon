@@ -3,8 +3,8 @@
     .version = "0.0.0",
     .dependencies = .{
         .sdl = .{
-            .url = "https://github.com/MasterQ32/SDL.zig/archive/120667e5de18402fea6f7944b5f0c911e235bf3a.tar.gz",
-            .hash = "1220fa912548957c1bf558f3f455b520dd0875bb09d28f8dd40af3e3a853222ee310",
+            .url = "https://github.com/MasterQ32/SDL.zig/archive/dd46ee3.tar.gz",
+            .hash = "12202a0847d24f9c79302fff04e73d65a3342baecf0dfea46ac304eb68109ab6b472",
         },
     },
     .paths = .{

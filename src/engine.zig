@@ -1,6 +1,4 @@
-const c = @cImport({
-    @cInclude("SDL2/SDL.h");
-});
+const c = @import("sdl2");
 const assert = @import("std").debug.assert;
 const common = @import("common.zig");
 
