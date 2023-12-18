@@ -1,22 +1,20 @@
 const std = @import("std");
-const Sdk = @import("sdl");
 
 pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
-    const sdk = Sdk.init(b, null);
-
     const exe = b.addExecutable(.{
         .name = "survival",
         .root_source_file = .{ .path = "src/main.zig" },
+        .main_pkg_path = .{ .path = "." },
         .target = target,
         .optimize = optimize,
     });
 
-    sdk.link(exe, .static); // link SDL2 as a static library
-    // Add "sdl2" package that exposes the SDL2 api (like SDL_Init or SDL_CreateWindow)
-    exe.addModule("sdl2", sdk.getNativeModule());
+    exe.linkSystemLibrary("SDL2");
+    exe.linkSystemLibrary("SDL2_image");
+    exe.linkLibC();
 
     b.installArtifact(exe);
 
