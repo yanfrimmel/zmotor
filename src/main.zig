@@ -15,7 +15,7 @@ pub fn main() !void {
     const screenWidth = windowSizeArgsHandler(&argsIterator, 400, "width");
     const screenHeight = windowSizeArgsHandler(&argsIterator, 140, "height");
 
-    try game.start(screenWidth, screenHeight);
+    try game.start(screenWidth, screenHeight, allocator);
 }
 
 fn windowSizeArgsHandler(argsIterator: *std.process.ArgIterator, defaultSize: u16, str: []const u8) u16 {

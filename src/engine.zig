@@ -5,8 +5,9 @@ const sdl = @cImport({
 
 const assert = @import("std").debug.assert;
 const common = @import("common.zig");
+const std = @import("std");
 
-pub fn start(width: u16, height: u16, logic: *const fn (input: ?common.InputEvent) common.GraphicalGameState) !void {
+pub fn start(allocator: std.mem.Allocator, width: u16, height: u16, atlases: []common.Atlas, logic: *const fn (input: ?common.InputEvent) common.GraphicalGameState) !void {
     try initSdl();
     defer sdl.SDL_Quit();
     defer sdl.IMG_Quit();
@@ -17,7 +18,7 @@ pub fn start(width: u16, height: u16, logic: *const fn (input: ?common.InputEven
     const renderer = try initRenderer(window);
     defer sdl.SDL_DestroyRenderer(renderer);
 
-    try gameLoog(renderer, logic);
+    try gameLoop(allocator, renderer, atlases, logic);
 }
 
 fn initRenderer(window: *sdl.SDL_Window) !*sdl.SDL_Renderer {
@@ -49,12 +50,23 @@ fn initSdl() !void {
     }
 }
 
-fn gameLoog(renderer: *sdl.SDL_Renderer, logic: *const fn (input: ?common.InputEvent) common.GraphicalGameState) !void {
-    const exampleTexture = sdl.IMG_LoadTexture(renderer, "assets/dirt.png") orelse {
-        sdl.SDL_Log("Unable to load textutre: %s", sdl.IMG_GetError());
-        return error.SDLInitializationFailed;
-    };
-    defer sdl.SDL_DestroyTexture(exampleTexture);
+fn gameLoop(allocator: std.mem.Allocator, renderer: *sdl.SDL_Renderer, atlases: []common.Atlas, logic: *const fn (input: ?common.InputEvent) common.GraphicalGameState) !void {
+    var atlasMap = std.StringHashMap(*sdl.SDL_Texture).init(allocator);
+    for (atlases) |atlas| {
+        const atlasTexture = sdl.IMG_LoadTexture(renderer, @ptrCast(atlas.path)) orelse {
+            sdl.SDL_Log("Unable to load textutre: %s", sdl.IMG_GetError());
+            return error.SDLInitializationFailed;
+        };
+        try atlasMap.put(atlas.id, atlasTexture);
+    }
+
+    defer {
+        var it = atlasMap.valueIterator();
+        while (it.next()) |value| {
+            sdl.SDL_DestroyTexture(value.*);
+        }
+        atlasMap.deinit();
+    }
 
     var quit = false;
     while (!quit) {
@@ -71,7 +83,7 @@ fn gameLoog(renderer: *sdl.SDL_Renderer, logic: *const fn (input: ?common.InputE
         // TODO: draw state
 
         _ = sdl.SDL_RenderClear(renderer);
-        _ = sdl.SDL_RenderCopy(renderer, exampleTexture, null, null);
+        _ = sdl.SDL_RenderCopy(renderer, atlasMap.get("tiles"), null, null);
         sdl.SDL_RenderPresent(renderer);
 
         sdl.SDL_Delay(17);
