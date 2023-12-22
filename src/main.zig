@@ -12,8 +12,8 @@ pub fn main() !void {
     defer argsIterator.deinit();
     _ = argsIterator.next(); // Skip executable
 
-    const screenWidth = windowSizeArgsHandler(&argsIterator, 400, "width");
-    const screenHeight = windowSizeArgsHandler(&argsIterator, 140, "height");
+    const screenWidth = windowSizeArgsHandler(&argsIterator, 640, "width");
+    const screenHeight = windowSizeArgsHandler(&argsIterator, 480, "height");
 
     try game.start(screenWidth, screenHeight, allocator);
 }
