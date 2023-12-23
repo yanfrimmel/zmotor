@@ -100,7 +100,6 @@ fn gameLoop(allocator: std.mem.Allocator, renderer: *sdl.SDL_Renderer, atlases: 
 }
 
 pub fn draw(allocator: std.mem.Allocator, renderer: *sdl.SDL_Renderer, atlasMap: std.StringHashMap(*sdl.SDL_Texture), state: *common.GraphicalGameState) !void {
-    // TODO: draw state
     const camera = state.camera;
 
     if (state.objects) |objects| {
@@ -109,8 +108,8 @@ pub fn draw(allocator: std.mem.Allocator, renderer: *sdl.SDL_Renderer, atlasMap:
             if (position.x >= camera.x and position.x <= (camera.x + camera.w) and position.y >= camera.y and position.y <= (camera.y + camera.h)) {
                 // std.debug.print("\n\nobject.atlas: {s}  !!!\n\n", .{object.atlas});
 
-                std.debug.print("\nHere: {s}  !!!\n", .{object.*.atlas});
-                const atlas = atlasMap.get(object.*.atlas);
+                std.debug.print("\nHere: {s}  !!!\n", .{object.atlas});
+                const atlas = atlasMap.get(object.atlas);
                 const srcRect = object.positionInAtlas;
                 std.debug.print("Here1: {d}  !!!\n", .{srcRect.h});
                 // std.debug.print("Here4: {d}  !!!\n", .{object.*.position.x});
@@ -120,22 +119,20 @@ pub fn draw(allocator: std.mem.Allocator, renderer: *sdl.SDL_Renderer, atlasMap:
             }
         }
     }
-    // _ = sdl.SDL_RenderCopy(renderer, atlasMap.get("tiles"), null, null);
 }
 
-fn fromWorldPostionToRendererTargetRect(position: *common.Point, camera: *common.Rectangle, w: u16, h: u16) sdl.SDL_Rect {
+fn fromWorldPostionToRendererTargetRect(position: common.Point, camera: common.Rectangle, w: u16, h: u16) sdl.SDL_Rect {
     // const x: c_int = @intCast(position.x);
     // std.debug.print("Here2: {d}  !!!\n", .{x});
-
-    return sdl.SDL_Rect{
-        .x = @intCast(position.x - camera.x),
-        .y = @intCast(position.y - camera.y),
-        .w = @intCast(w),
-        .h = @intCast(h),
-    };
+    return castToSDLRect(.{
+        .x = position.x - camera.x,
+        .y = position.y - camera.y,
+        .w = w,
+        .h = h,
+    });
 }
 
-fn castToSDLRect(srcRect: *common.Rectangle) sdl.SDL_Rect {
+fn castToSDLRect(srcRect: common.Rectangle) sdl.SDL_Rect {
     // const x: c_int = @intCast(srcRect.w);
     // std.debug.print("Here3: {d}  !!!\n", .{x});
     return sdl.SDL_Rect{

@@ -19,24 +19,18 @@ pub const Atlas = struct {
 
 pub const GraphicalObject = struct {
     id: []u8,
-    position: *Point, // Location in the world
-    layer: *u8, // Controls the order in which the sprites renders, a sprite with high `layer` will dispaly in front of others
-    positionInAtlas: *Rectangle, // To fetch the right area from atlas
+    position: Point, // Location in the world
+    layer: u8, // Controls the order in which the sprites renders, a sprite with high `layer` will dispaly in front of others
+    positionInAtlas: Rectangle, // To fetch the right area from atlas
     atlas: []u8, // There could be multiple atlases, based on sprite sizes or animations
 
     pub fn init(allocator: std.mem.Allocator, id: []const u8, position: Point, layer: u8, positionInAtlas: Rectangle, atlas: []const u8) !*GraphicalObject {
         const objectPtr = try allocator.create(GraphicalObject);
         objectPtr.id = try allocator.alloc(u8, id.len);
+        objectPtr.position = position;
+        objectPtr.layer = layer;
+        objectPtr.positionInAtlas = positionInAtlas;
         std.mem.copy(u8, objectPtr.id, id);
-
-        objectPtr.position = try allocator.create(Point);
-        objectPtr.position.* = position;
-
-        objectPtr.layer = try allocator.create(u8);
-        objectPtr.layer.* = layer;
-        objectPtr.positionInAtlas = try allocator.create(Rectangle);
-        objectPtr.positionInAtlas.* = positionInAtlas;
-
         objectPtr.atlas = try allocator.alloc(u8, atlas.len);
         std.mem.copy(u8, objectPtr.atlas, atlas);
         return objectPtr;
@@ -44,9 +38,6 @@ pub const GraphicalObject = struct {
 
     pub fn deinit(self: *GraphicalObject, allocator: std.mem.Allocator) void {
         allocator.free(self.id);
-        allocator.destroy(self.position);
-        allocator.destroy(self.layer);
-        allocator.destroy(self.positionInAtlas);
         allocator.free(self.atlas);
         allocator.destroy(self);
     }
@@ -54,7 +45,7 @@ pub const GraphicalObject = struct {
 
 pub const GraphicalGameState = struct {
     objects: ?[]*GraphicalObject,
-    camera: *Rectangle,
+    camera: Rectangle,
 
     pub fn init(allocator: std.mem.Allocator, objects: ?[]*GraphicalObject, camera: Rectangle) !*GraphicalGameState {
         const statePtr = try allocator.create(GraphicalGameState);
@@ -63,8 +54,7 @@ pub const GraphicalGameState = struct {
             std.mem.copy(*GraphicalObject, statePtr.objects.?, objectsUnbox);
         }
 
-        statePtr.camera = try allocator.create(Rectangle);
-        statePtr.camera.* = camera;
+        statePtr.camera = camera;
 
         return statePtr;
     }
@@ -76,7 +66,6 @@ pub const GraphicalGameState = struct {
             }
             allocator.free(objects);
         }
-        allocator.destroy(self.camera);
         allocator.destroy(self);
     }
 };
