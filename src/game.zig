@@ -15,8 +15,27 @@ pub fn start(width: u16, height: u16, allocator: std.mem.Allocator) !void {
     try engine.start(allocator, width, height, atlases, logic);
 }
 fn logic(allocator: std.mem.Allocator, input: ?common.InputEvent) *common.GraphicalGameState {
-    _ = input; //TODO: handle input
-    var obj = common.GraphicalObject.init(allocator, "test", common.Point{ .x = 0, .y = 0 }, 1, common.Rectangle{
+    var camera = common.Rectangle{
+        .x = 0,
+        .y = 0,
+        .w = screenWidth,
+        .h = screenHeight,
+    };
+    var position = common.Point{ .x = 0, .y = 0 };
+
+    if (input) |in| {
+        position = switch (in.eventType) {
+            common.EventType.MOTION => common.Point{
+                .x = in.position.?.x,
+                .y = in.position.?.y,
+            },
+            common.EventType.CLICK => common.Point{
+                .x = in.position.?.x,
+                .y = in.position.?.y,
+            },
+        };
+    }
+    var obj = common.GraphicalObject.init(allocator, "test", position, 1, common.Rectangle{
         .x = 0,
         .y = 0,
         .w = 32,
@@ -26,12 +45,7 @@ fn logic(allocator: std.mem.Allocator, input: ?common.InputEvent) *common.Graphi
     var state = common.GraphicalGameState.init(
         allocator,
         &objects,
-        common.Rectangle{
-            .x = 0,
-            .y = 0,
-            .w = screenWidth,
-            .h = screenHeight,
-        },
+        camera,
     ) catch unreachable;
 
     return state;

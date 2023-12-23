@@ -71,21 +71,22 @@ fn gameLoop(allocator: std.mem.Allocator, renderer: *sdl.SDL_Renderer, atlases: 
     var quit = false;
     while (!quit) {
         var event: sdl.SDL_Event = undefined;
-        var inputEvent: common.InputEvent = undefined;
+        var inputEvent: ?common.InputEvent = null;
         while (sdl.SDL_PollEvent(&event) != 0) {
             switch (event.type) {
                 sdl.SDL_QUIT => {
                     quit = true;
                 },
                 sdl.SDL_MOUSEBUTTONDOWN => {
-                    const point = common.Point{
-                        .x = @intCast(event.button.x),
-                        .y = @intCast(event.button.y),
-                    };
-
                     inputEvent = common.InputEvent{
-                        .position = point,
+                        .position = castFromSDL_MouseButtonEvent(event.button),
                         .eventType = common.EventType.CLICK,
+                    };
+                },
+                sdl.SDL_MOUSEMOTION => {
+                    inputEvent = common.InputEvent{
+                        .position = castFromSDL_MouseButtonEvent(event.button),
+                        .eventType = common.EventType.MOTION,
                     };
                 },
                 else => {},
@@ -100,22 +101,21 @@ fn gameLoop(allocator: std.mem.Allocator, renderer: *sdl.SDL_Renderer, atlases: 
 }
 
 pub fn draw(allocator: std.mem.Allocator, renderer: *sdl.SDL_Renderer, atlasMap: std.StringHashMap(*sdl.SDL_Texture), state: *common.GraphicalGameState) !void {
-    const camera = state.camera;
-
+    defer state.deinit(allocator);
     if (state.objects) |objects| {
         for (objects) |object| {
             const position = object.position;
+            const camera = state.camera;
             if (position.x >= camera.x and position.x <= (camera.x + camera.w) and position.y >= camera.y and position.y <= (camera.y + camera.h)) {
                 // std.debug.print("\n\nobject.atlas: {s}  !!!\n\n", .{object.atlas});
 
-                std.debug.print("\nHere: {s}  !!!\n", .{object.atlas});
+                // std.debug.print("\nHere: {s}  !!!\n", .{object.atlas});
                 const atlas = atlasMap.get(object.atlas);
                 const srcRect = object.positionInAtlas;
-                std.debug.print("Here1: {d}  !!!\n", .{srcRect.h});
+                // std.debug.print("Here1: {d}  !!!\n", .{srcRect.h});
                 // std.debug.print("Here4: {d}  !!!\n", .{object.*.position.x});
 
                 _ = sdl.SDL_RenderCopy(renderer, atlas, &castToSDLRect(srcRect), &fromWorldPostionToRendererTargetRect(object.position, camera, srcRect.w, srcRect.h));
-                state.deinit(allocator);
             }
         }
     }
@@ -140,5 +140,12 @@ fn castToSDLRect(srcRect: common.Rectangle) sdl.SDL_Rect {
         .y = @intCast(srcRect.y),
         .w = @intCast(srcRect.w),
         .h = @intCast(srcRect.h),
+    };
+}
+
+fn castFromSDL_MouseButtonEvent(button: sdl.SDL_MouseButtonEvent) common.Point {
+    return .{
+        .x = if (button.x > 0) @intCast(button.x) else 0,
+        .y = if (button.y > 0) @intCast(button.y) else 0,
     };
 }

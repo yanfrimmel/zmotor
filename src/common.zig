@@ -61,8 +61,8 @@ pub const GraphicalGameState = struct {
 
     pub fn deinit(self: *GraphicalGameState, allocator: std.mem.Allocator) void {
         if (self.objects) |objects| {
-            for (objects) |*obj| {
-                obj.*.deinit(allocator);
+            for (objects) |obj| {
+                obj.deinit(allocator);
             }
             allocator.free(objects);
         }
@@ -77,4 +77,5 @@ pub const InputEvent = struct {
 
 pub const EventType = enum {
     CLICK,
+    MOTION,
 };
