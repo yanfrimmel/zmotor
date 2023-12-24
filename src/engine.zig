@@ -1,6 +1,7 @@
 const sdl = @cImport({
     @cInclude("SDL2/SDL.h");
     @cInclude("SDL2/SDL_image.h");
+    @cInclude("SDL2/SDL_ttf.h");
 });
 
 const assert = @import("std").debug.assert;
@@ -11,6 +12,7 @@ pub fn start(allocator: std.mem.Allocator, width: u16, height: u16, atlases: []c
     try initSdl();
     defer sdl.SDL_Quit();
     defer sdl.IMG_Quit();
+    defer sdl.TTF_Quit();
 
     const window = try initWindow(width, height);
     defer sdl.SDL_DestroyWindow(window);
@@ -19,6 +21,14 @@ pub fn start(allocator: std.mem.Allocator, width: u16, height: u16, atlases: []c
     defer sdl.SDL_DestroyRenderer(renderer);
 
     try gameLoop(allocator, renderer, atlases, logic);
+}
+// ptsize - font point size
+fn getFontFromFile(file: []const u8, ptsize: u8) *sdl.TTF_Font {
+    var gFont = sdl.TTF_OpenFont(file, ptsize) orelse {
+        sdl.SDL_Log("Failed to load font file: %s", file);
+        return error.TTFLoadFontError;
+    };
+    return gFont;
 }
 
 fn initRenderer(window: *sdl.SDL_Window) !*sdl.SDL_Renderer {
@@ -48,6 +58,11 @@ fn initSdl() !void {
         sdl.SDL_Log("Unable to initialize SDL Image: %s", sdl.IMG_GetError());
         return error.SDLInitializationFailed;
     }
+
+    if (sdl.TTF_Init() == -1) {
+        sdl.SDL_Log("SDL_ttf could not initialize! SDL_ttf Error: %s", sdl.TTF_GetError());
+        return error.SDLInitializationFailed;
+    }
 }
 
 fn gameLoop(allocator: std.mem.Allocator, renderer: *sdl.SDL_Renderer, atlases: []common.Atlas, logic: *const fn (allocator: std.mem.Allocator, input: ?common.InputEvent) *common.GraphicalGameState) !void {
@@ -55,7 +70,7 @@ fn gameLoop(allocator: std.mem.Allocator, renderer: *sdl.SDL_Renderer, atlases: 
     for (atlases) |atlas| {
         const atlasTexture = sdl.IMG_LoadTexture(renderer, @ptrCast(atlas.path)) orelse {
             sdl.SDL_Log("Unable to load textutre: %s", sdl.IMG_GetError());
-            return error.SDLInitializationFailed;
+            return error.IMGLoadTextureError;
         };
         try atlasMap.put(atlas.id, atlasTexture);
     }

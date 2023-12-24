@@ -35,7 +35,7 @@ fn logic(allocator: std.mem.Allocator, input: ?common.InputEvent) *common.Graphi
             },
         };
     }
-    var obj = common.GraphicalObject.init(allocator, "test", position, 1, common.Rectangle{
+    var obj = common.GraphicalObject.init(allocator, "test", position, common.Rectangle{
         .x = 0,
         .y = 0,
         .w = 32,

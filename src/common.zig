@@ -20,15 +20,13 @@ pub const Atlas = struct {
 pub const GraphicalObject = struct {
     id: []u8,
     position: Point, // Location in the world
-    layer: u8, // Controls the order in which the sprites renders, a sprite with high `layer` will dispaly in front of others
     positionInAtlas: Rectangle, // To fetch the right area from atlas
     atlas: []u8, // There could be multiple atlases, based on sprite sizes or animations
 
-    pub fn init(allocator: std.mem.Allocator, id: []const u8, position: Point, layer: u8, positionInAtlas: Rectangle, atlas: []const u8) !*GraphicalObject {
+    pub fn init(allocator: std.mem.Allocator, id: []const u8, position: Point, positionInAtlas: Rectangle, atlas: []const u8) !*GraphicalObject {
         const objectPtr = try allocator.create(GraphicalObject);
         objectPtr.id = try allocator.alloc(u8, id.len);
         objectPtr.position = position;
-        objectPtr.layer = layer;
         objectPtr.positionInAtlas = positionInAtlas;
         std.mem.copy(u8, objectPtr.id, id);
         objectPtr.atlas = try allocator.alloc(u8, atlas.len);
