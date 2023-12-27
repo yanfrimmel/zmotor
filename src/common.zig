@@ -17,25 +17,72 @@ pub const Atlas = struct {
     path: []const u8,
 };
 
+pub const Color = struct {
+    r: u8,
+    g: u8,
+    b: u8,
+    a: u8,
+};
+
+pub const Font = struct {
+    id: []const u8,
+    path: []const u8,
+
+    pub fn init(allocator: std.mem.Allocator, id: []const u8, path: []const u8) !*Font {
+        const self = try allocator.create(Font);
+        self.id = try allocator.alloc(u8, id.len);
+        std.mem.copy(u8, self.id, id);
+        self.path = try allocator.alloc(u8, path.len);
+        std.mem.copy(u8, self.path, path);
+        return self;
+    }
+
+    pub fn deinit(self: *Font, allocator: std.mem.Allocator) void {
+        allocator.free(self.id);
+        allocator.free(self.path);
+        allocator.destroy(self);
+    }
+};
+
+pub const TextObject = struct {
+    font: []u8,
+    position: Point,
+    text: []u8,
+    color: Color,
+
+    pub fn init(allocator: std.mem.Allocator, font: []const u8, position: Point, text: []const u8, color: Color) !*TextObject {
+        const self = try allocator.create(TextObject);
+        self.font = try allocator.alloc(u8, font.len);
+        std.mem.copy(u8, self.font, font);
+        self.position = position;
+        self.text = try allocator.alloc(u8, text.len);
+        std.mem.copy(u8, self.text, text);
+        self.color = color;
+        return self;
+    }
+
+    pub fn deinit(self: *TextObject, allocator: std.mem.Allocator) void {
+        allocator.free(self.font);
+        allocator.free(self.text);
+        allocator.destroy(self);
+    }
+};
+
 pub const GraphicalObject = struct {
-    id: []u8,
     position: Point, // Location in the world
     positionInAtlas: Rectangle, // To fetch the right area from atlas
     atlas: []u8, // There could be multiple atlases, based on sprite sizes or animations
 
-    pub fn init(allocator: std.mem.Allocator, id: []const u8, position: Point, positionInAtlas: Rectangle, atlas: []const u8) !*GraphicalObject {
-        const objectPtr = try allocator.create(GraphicalObject);
-        objectPtr.id = try allocator.alloc(u8, id.len);
-        objectPtr.position = position;
-        objectPtr.positionInAtlas = positionInAtlas;
-        std.mem.copy(u8, objectPtr.id, id);
-        objectPtr.atlas = try allocator.alloc(u8, atlas.len);
-        std.mem.copy(u8, objectPtr.atlas, atlas);
-        return objectPtr;
+    pub fn init(allocator: std.mem.Allocator, position: Point, positionInAtlas: Rectangle, atlas: []const u8) !*GraphicalObject {
+        const self = try allocator.create(GraphicalObject);
+        self.position = position;
+        self.positionInAtlas = positionInAtlas;
+        self.atlas = try allocator.alloc(u8, atlas.len);
+        std.mem.copy(u8, self.atlas, atlas);
+        return self;
     }
 
     pub fn deinit(self: *GraphicalObject, allocator: std.mem.Allocator) void {
-        allocator.free(self.id);
         allocator.free(self.atlas);
         allocator.destroy(self);
     }
@@ -43,18 +90,28 @@ pub const GraphicalObject = struct {
 
 pub const GraphicalGameState = struct {
     objects: ?[]*GraphicalObject,
+    texts: ?[]*TextObject,
     camera: Rectangle,
-
-    pub fn init(allocator: std.mem.Allocator, objects: ?[]*GraphicalObject, camera: Rectangle) !*GraphicalGameState {
-        const statePtr = try allocator.create(GraphicalGameState);
+    // call init to allocate memory for pointer elements outside of this init
+    pub fn init(allocator: std.mem.Allocator, objects: ?[]*GraphicalObject, texts: ?[]*TextObject, camera: Rectangle) !*GraphicalGameState {
+        const self = try allocator.create(GraphicalGameState);
         if (objects) |objectsUnbox| {
-            statePtr.objects = try allocator.alloc(*GraphicalObject, objectsUnbox.len);
-            std.mem.copy(*GraphicalObject, statePtr.objects.?, objectsUnbox);
+            self.objects = try allocator.alloc(*GraphicalObject, objectsUnbox.len);
+            std.mem.copy(*GraphicalObject, self.objects.?, objectsUnbox);
+        } else {
+            self.objects = null;
         }
 
-        statePtr.camera = camera;
+        if (texts) |textsUnbox| {
+            self.texts = try allocator.alloc(*TextObject, textsUnbox.len);
+            std.mem.copy(*TextObject, self.texts.?, textsUnbox);
+        } else {
+            self.texts = null; // will not work without this - seg fault if null passed
+        }
 
-        return statePtr;
+        self.camera = camera;
+
+        return self;
     }
 
     pub fn deinit(self: *GraphicalGameState, allocator: std.mem.Allocator) void {
@@ -63,6 +120,12 @@ pub const GraphicalGameState = struct {
                 obj.deinit(allocator);
             }
             allocator.free(objects);
+        }
+        if (self.texts) |texts| {
+            for (texts) |text| {
+                text.deinit(allocator);
+            }
+            allocator.free(texts);
         }
         allocator.destroy(self);
     }

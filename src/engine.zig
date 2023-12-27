@@ -22,6 +22,13 @@ pub fn start(allocator: std.mem.Allocator, width: u16, height: u16, atlases: []c
 
     try gameLoop(allocator, renderer, atlases, logic);
 }
+
+fn renderText(font: []const u8, text: []const u8, color: sdl.SDL_Color) !void {
+    _ = font;
+    _ = text;
+    _ = color;
+}
+
 // ptsize - font point size
 fn getFontFromFile(file: []const u8, ptsize: u8) *sdl.TTF_Font {
     var gFont = sdl.TTF_OpenFont(file, ptsize) orelse {
@@ -121,6 +128,7 @@ pub fn draw(allocator: std.mem.Allocator, renderer: *sdl.SDL_Renderer, atlasMap:
         for (objects) |object| {
             const position = object.position;
             const camera = state.camera;
+            // check if in screen
             if (position.x >= camera.x and position.x <= (camera.x + camera.w) and position.y >= camera.y and position.y <= (camera.y + camera.h)) {
                 // std.debug.print("\n\nobject.atlas: {s}  !!!\n\n", .{object.atlas});
 

@@ -35,7 +35,7 @@ fn logic(allocator: std.mem.Allocator, input: ?common.InputEvent) *common.Graphi
             },
         };
     }
-    var obj = common.GraphicalObject.init(allocator, "test", position, common.Rectangle{
+    var obj = common.GraphicalObject.init(allocator, position, common.Rectangle{
         .x = 0,
         .y = 0,
         .w = 32,
@@ -45,6 +45,7 @@ fn logic(allocator: std.mem.Allocator, input: ?common.InputEvent) *common.Graphi
     var state = common.GraphicalGameState.init(
         allocator,
         &objects,
+        null,
         camera,
     ) catch unreachable;
 
