@@ -12,13 +12,13 @@ pub fn main() !void {
     defer argsIterator.deinit();
     _ = argsIterator.next(); // Skip executable
 
-    const screenWidth = windowSizeArgsHandler(&argsIterator, 640, "width");
-    const screenHeight = windowSizeArgsHandler(&argsIterator, 480, "height");
-
-    try game.start(screenWidth, screenHeight, allocator);
+    const screenWidth = intArgsHandler(&argsIterator, 640, "width");
+    const screenHeight = intArgsHandler(&argsIterator, 480, "height");
+    const fps = intArgsHandler(&argsIterator, 60, "fps");
+    try game.start(screenWidth, screenHeight, fps, allocator);
 }
 
-fn windowSizeArgsHandler(argsIterator: *std.process.ArgIterator, defaultSize: u16, str: []const u8) u16 {
+fn intArgsHandler(argsIterator: *std.process.ArgIterator, defaultSize: u16, str: []const u8) u16 {
     var size = defaultSize;
     if (argsIterator.next()) |arg| {
         size = std.fmt.parseInt(u16, arg, 10) catch |err| switch (err) {
@@ -27,7 +27,7 @@ fn windowSizeArgsHandler(argsIterator: *std.process.ArgIterator, defaultSize: u1
                 break :blk defaultSize;
             },
         };
-        std.debug.print("Screen {s}:  {d}\n", .{ str, size });
+        std.debug.print("Arg {s}: {d}\n", .{ str, size });
     }
     return size;
 }

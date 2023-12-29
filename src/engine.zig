@@ -8,7 +8,7 @@ const assert = @import("std").debug.assert;
 const common = @import("common.zig");
 const std = @import("std");
 
-pub fn start(allocator: std.mem.Allocator, width: u16, height: u16, atlases: []common.Atlas, logic: *const fn (allocator: std.mem.Allocator, input: ?common.InputEvent) *common.GraphicalGameState) !void {
+pub fn start(allocator: std.mem.Allocator, width: u16, height: u16, fps: u16, atlases: []common.Atlas, logic: *const fn (allocator: std.mem.Allocator, input: ?common.InputEvent) *common.GraphicalGameState) !void {
     try initSdl();
     defer sdl.SDL_Quit();
     defer sdl.IMG_Quit();
@@ -20,7 +20,7 @@ pub fn start(allocator: std.mem.Allocator, width: u16, height: u16, atlases: []c
     const renderer = try initRenderer(window);
     defer sdl.SDL_DestroyRenderer(renderer);
 
-    try gameLoop(allocator, renderer, atlases, logic);
+    try gameLoop(allocator, fps, renderer, atlases, logic);
 }
 
 fn renderText(font: []const u8, text: []const u8, color: sdl.SDL_Color) !void {
@@ -72,7 +72,7 @@ fn initSdl() !void {
     }
 }
 
-fn gameLoop(allocator: std.mem.Allocator, renderer: *sdl.SDL_Renderer, atlases: []common.Atlas, logic: *const fn (allocator: std.mem.Allocator, input: ?common.InputEvent) *common.GraphicalGameState) !void {
+fn gameLoop(allocator: std.mem.Allocator, fps: u16, renderer: *sdl.SDL_Renderer, atlases: []common.Atlas, logic: *const fn (allocator: std.mem.Allocator, input: ?common.InputEvent) *common.GraphicalGameState) !void {
     var atlasMap = std.StringHashMap(*sdl.SDL_Texture).init(allocator);
     for (atlases) |atlas| {
         const atlasTexture = sdl.IMG_LoadTexture(renderer, @ptrCast(atlas.path)) orelse {
@@ -92,6 +92,8 @@ fn gameLoop(allocator: std.mem.Allocator, renderer: *sdl.SDL_Renderer, atlases: 
 
     var quit = false;
     while (!quit) {
+        const startP = sdl.SDL_GetPerformanceCounter();
+
         var event: sdl.SDL_Event = undefined;
         var inputEvent: ?common.InputEvent = null;
         while (sdl.SDL_PollEvent(&event) != 0) {
@@ -118,7 +120,23 @@ fn gameLoop(allocator: std.mem.Allocator, renderer: *sdl.SDL_Renderer, atlases: 
         try draw(allocator, renderer, atlasMap, logic(allocator, inputEvent));
         sdl.SDL_RenderPresent(renderer);
 
-        sdl.SDL_Delay(17);
+        const end = sdl.SDL_GetPerformanceCounter();
+
+        const elapsedMS = @as(f64, @floatFromInt(end - startP)) / @as(f64, @floatFromInt(sdl.SDL_GetPerformanceFrequency())) * @as(f64, 1000.0);
+
+        // Cap FPS
+        var delay = 1000 / @as(f64, @floatFromInt(fps)) - elapsedMS;
+        // use to show FPS
+        if (delay < 0) {
+            delay = elapsedMS;
+            std.debug.print("FPS: {d}\n", .{1000.0 / delay});
+        } else {
+            std.debug.print("FPS: {d}\n", .{1000.0 / (elapsedMS + delay)});
+        }
+        std.debug.print("elaspsed: {d}\n", .{elapsedMS});
+        std.debug.print("delay: {d}\n", .{delay});
+
+        sdl.SDL_Delay(@as(u32, @intFromFloat(delay)));
     }
 }
 
