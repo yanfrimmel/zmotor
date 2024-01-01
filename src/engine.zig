@@ -8,7 +8,7 @@ const assert = @import("std").debug.assert;
 const common = @import("common.zig");
 const std = @import("std");
 
-pub fn start(allocator: std.mem.Allocator, width: u16, height: u16, fps: u16, atlases: []common.Atlas, logic: *const fn (allocator: std.mem.Allocator, input: ?common.InputEvent) *common.GraphicalGameState) !void {
+pub fn start(allocator: std.mem.Allocator, width: u16, height: u16, fps: u16, atlases: []common.Atlas, fonts: []common.Font, logic: *const fn (allocator: std.mem.Allocator, input: ?common.InputEvent) *common.GraphicalGameState) !void {
     try initSdl();
     defer sdl.SDL_Quit();
     defer sdl.IMG_Quit();
@@ -20,7 +20,7 @@ pub fn start(allocator: std.mem.Allocator, width: u16, height: u16, fps: u16, at
     const renderer = try initRenderer(window);
     defer sdl.SDL_DestroyRenderer(renderer);
 
-    try gameLoop(allocator, fps, renderer, atlases, logic);
+    try gameLoop(allocator, fps, renderer, atlases, fonts, logic);
 }
 
 fn renderText(font: []const u8, text: []const u8, color: sdl.SDL_Color) !void {
@@ -72,7 +72,7 @@ fn initSdl() !void {
     }
 }
 
-fn gameLoop(allocator: std.mem.Allocator, fps: u16, renderer: *sdl.SDL_Renderer, atlases: []common.Atlas, logic: *const fn (allocator: std.mem.Allocator, input: ?common.InputEvent) *common.GraphicalGameState) !void {
+fn loadAtlases(allocator: std.mem.Allocator, renderer: *sdl.SDL_Renderer, atlases: []common.Atlas) !std.StringHashMap(*sdl.SDL_Texture) {
     var atlasMap = std.StringHashMap(*sdl.SDL_Texture).init(allocator);
     for (atlases) |atlas| {
         const atlasTexture = sdl.IMG_LoadTexture(renderer, @ptrCast(atlas.path)) orelse {
@@ -82,14 +82,21 @@ fn gameLoop(allocator: std.mem.Allocator, fps: u16, renderer: *sdl.SDL_Renderer,
         try atlasMap.put(atlas.id, atlasTexture);
     }
 
-    defer {
-        var it = atlasMap.valueIterator();
-        while (it.next()) |value| {
-            sdl.SDL_DestroyTexture(value.*);
-        }
-        atlasMap.deinit();
-    }
+    return atlasMap;
+}
 
+fn deinitAtlasesMap(atlasMap: *std.StringHashMap(*sdl.SDL_Texture)) void {
+    var it = atlasMap.valueIterator();
+    while (it.next()) |value| {
+        sdl.SDL_DestroyTexture(value.*);
+    }
+    atlasMap.deinit();
+}
+
+fn gameLoop(allocator: std.mem.Allocator, fps: u16, renderer: *sdl.SDL_Renderer, atlases: []common.Atlas, fonts: []common.Font, logic: *const fn (allocator: std.mem.Allocator, input: ?common.InputEvent) *common.GraphicalGameState) !void {
+    var atlasMap = try loadAtlases(allocator, renderer, atlases);
+    defer deinitAtlasesMap(&atlasMap);
+    _ = fonts; // TODO implement fonts
     var quit = false;
     while (!quit) {
         const startP = sdl.SDL_GetPerformanceCounter();
@@ -133,8 +140,6 @@ fn gameLoop(allocator: std.mem.Allocator, fps: u16, renderer: *sdl.SDL_Renderer,
         } else {
             std.debug.print("FPS: {d}\n", .{1000.0 / (elapsedMS + delay)});
         }
-        std.debug.print("elaspsed: {d}\n", .{elapsedMS});
-        std.debug.print("delay: {d}\n", .{delay});
 
         sdl.SDL_Delay(@as(u32, @intFromFloat(delay)));
     }
