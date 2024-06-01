@@ -31,7 +31,7 @@ fn renderText(font: []const u8, text: []const u8, color: sdl.SDL_Color) !void {
 
 // ptsize - font point size
 fn getFontFromFile(file: []const u8, ptsize: u8) *sdl.TTF_Font {
-    var gFont = sdl.TTF_OpenFont(file, ptsize) orelse {
+    const gFont = sdl.TTF_OpenFont(file, ptsize) orelse {
         sdl.SDL_Log("Failed to load font file: %s", file);
         return error.TTFLoadFontError;
     };

@@ -7,7 +7,6 @@ pub fn build(b: *std.Build) void {
     const exe = b.addExecutable(.{
         .name = "survival",
         .root_source_file = .{ .path = "src/main.zig" },
-        .main_pkg_path = .{ .path = "." },
         .target = target,
         .optimize = optimize,
     });

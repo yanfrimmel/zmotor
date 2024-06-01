@@ -21,7 +21,7 @@ pub fn start(width: u16, height: u16, fps: u16, allocator: std.mem.Allocator) !v
     try engine.start(allocator, width, height, fps, atlases, fonts, logic);
 }
 fn logic(allocator: std.mem.Allocator, input: ?common.InputEvent) *common.GraphicalGameState {
-    var camera = common.Rectangle{
+    const camera = common.Rectangle{
         .x = 0,
         .y = 0,
         .w = screenWidth,
@@ -41,14 +41,14 @@ fn logic(allocator: std.mem.Allocator, input: ?common.InputEvent) *common.Graphi
             },
         };
     }
-    var obj = common.GraphicalObject.init(allocator, position, common.Rectangle{
+    const obj = common.GraphicalObject.init(allocator, position, common.Rectangle{
         .x = 0,
         .y = 0,
         .w = 32,
         .h = 32,
     }, "tiles") catch unreachable;
     var objects = [_]*common.GraphicalObject{obj};
-    var state = common.GraphicalGameState.init(
+    const state = common.GraphicalGameState.init(
         allocator,
         &objects,
         null,

@@ -31,9 +31,9 @@ pub const Font = struct {
     pub fn init(allocator: std.mem.Allocator, id: []const u8, path: []const u8) !*Font {
         const self = try allocator.create(Font);
         self.id = try allocator.alloc(u8, id.len);
-        std.mem.copy(u8, self.id, id);
+        @memcpy(self.id, id);
         self.path = try allocator.alloc(u8, path.len);
-        std.mem.copy(u8, self.path, path);
+        @memcpy(self.path, path);
         return self;
     }
 
@@ -53,10 +53,10 @@ pub const TextObject = struct {
     pub fn init(allocator: std.mem.Allocator, font: []const u8, position: Point, text: []const u8, color: Color) !*TextObject {
         const self = try allocator.create(TextObject);
         self.font = try allocator.alloc(u8, font.len);
-        std.mem.copy(u8, self.font, font);
+        @memcpy(self.font, font);
         self.position = position;
         self.text = try allocator.alloc(u8, text.len);
-        std.mem.copy(u8, self.text, text);
+        @memcpy(self.text, text);
         self.color = color;
         return self;
     }
@@ -78,7 +78,7 @@ pub const GraphicalObject = struct {
         self.position = position;
         self.positionInAtlas = positionInAtlas;
         self.atlas = try allocator.alloc(u8, atlas.len);
-        std.mem.copy(u8, self.atlas, atlas);
+        @memcpy(self.atlas, atlas);
         return self;
     }
 
@@ -97,14 +97,14 @@ pub const GraphicalGameState = struct {
         const self = try allocator.create(GraphicalGameState);
         if (objects) |objectsUnbox| {
             self.objects = try allocator.alloc(*GraphicalObject, objectsUnbox.len);
-            std.mem.copy(*GraphicalObject, self.objects.?, objectsUnbox);
+            @memcpy(self.objects.?, objectsUnbox);
         } else {
             self.objects = null;
         }
 
         if (texts) |textsUnbox| {
             self.texts = try allocator.alloc(*TextObject, textsUnbox.len);
-            std.mem.copy(*TextObject, self.texts.?, textsUnbox);
+            @memcpy(self.texts.?, textsUnbox);
         } else {
             self.texts = null; // will not work without this - seg fault if null passed
         }
