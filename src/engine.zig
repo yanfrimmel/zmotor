@@ -8,7 +8,7 @@ const assert = @import("std").debug.assert;
 const common = @import("common.zig");
 const std = @import("std");
 
-pub fn start(allocator: std.mem.Allocator, width: u16, height: u16, fps: u16, atlases: []common.Atlas, fonts: []common.Font, logic: *const fn (allocator: std.mem.Allocator, input: ?common.InputEvent) *common.GraphicalGameState) !void {
+pub fn start(allocator: std.mem.Allocator, width: u16, height: u16, fps: u16, atlases: []common.Atlas, fonts: []common.Font, logic: *const fn (input: ?common.InputEvent, allocator: std.mem.Allocator) *common.GraphicalGameState) !void {
     try initSdl();
     defer sdl.SDL_Quit();
     defer sdl.IMG_Quit();
@@ -93,7 +93,7 @@ fn deinitAtlasesMap(atlasMap: *std.StringHashMap(*sdl.SDL_Texture)) void {
     atlasMap.deinit();
 }
 
-fn gameLoop(allocator: std.mem.Allocator, fps: u16, renderer: *sdl.SDL_Renderer, atlases: []common.Atlas, fonts: []common.Font, logic: *const fn (allocator: std.mem.Allocator, input: ?common.InputEvent) *common.GraphicalGameState) !void {
+fn gameLoop(allocator: std.mem.Allocator, fps: u16, renderer: *sdl.SDL_Renderer, atlases: []common.Atlas, fonts: []common.Font, logic: *const fn (input: ?common.InputEvent, allocator: std.mem.Allocator) *common.GraphicalGameState) !void {
     var atlasMap = try loadAtlases(allocator, renderer, atlases);
     defer deinitAtlasesMap(&atlasMap);
     _ = fonts; // TODO implement fonts
@@ -124,7 +124,7 @@ fn gameLoop(allocator: std.mem.Allocator, fps: u16, renderer: *sdl.SDL_Renderer,
             }
         }
         _ = sdl.SDL_RenderClear(renderer);
-        try draw(allocator, renderer, atlasMap, logic(allocator, inputEvent));
+        try draw(allocator, renderer, atlasMap, logic(inputEvent, allocator));
         sdl.SDL_RenderPresent(renderer);
 
         const end = sdl.SDL_GetPerformanceCounter();

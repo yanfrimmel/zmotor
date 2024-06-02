@@ -1,4 +1,4 @@
-const game = @import("game.zig");
+const game = @import("api.zig");
 const std = @import("std");
 
 pub fn main() !void {
@@ -15,7 +15,7 @@ pub fn main() !void {
     const screenWidth = intArgsHandler(&argsIterator, 640, "width");
     const screenHeight = intArgsHandler(&argsIterator, 480, "height");
     const fps = intArgsHandler(&argsIterator, 60, "fps");
-    try game.start(screenWidth, screenHeight, fps, allocator);
+    try game.Example.start(screenWidth, screenHeight, fps, allocator);
 }
 
 fn intArgsHandler(argsIterator: *std.process.ArgIterator, defaultSize: u16, str: []const u8) u16 {
