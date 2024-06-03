@@ -140,3 +140,5 @@ pub const EventType = enum {
     CLICK,
     MOTION,
 };
+
+pub const LogicFuncType = fn (input: ?InputEvent, allocator: std.mem.Allocator) *GraphicalGameState;
