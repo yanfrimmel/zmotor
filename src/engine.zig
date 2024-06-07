@@ -3,7 +3,11 @@ const sdl = @cImport({
     @cInclude("SDL2/SDL_image.h");
     @cInclude("SDL2/SDL_ttf.h");
 });
-
+const lodepng = @cImport({
+    @cDefine("LODEPNG_NO_COMPILE_CPP", "1");
+    @cDefine("LODEPNG_COMPILE_ERROR_TEXT", "1");
+    @cInclude("lodepng.h");
+});
 const assert = @import("std").debug.assert;
 const common = @import("common.zig");
 const std = @import("std");
@@ -75,10 +79,53 @@ fn initSdl() !void {
 fn loadAtlases(allocator: std.mem.Allocator, renderer: *sdl.SDL_Renderer, atlases: []common.Atlas) !std.StringHashMap(*sdl.SDL_Texture) {
     var atlasMap = std.StringHashMap(*sdl.SDL_Texture).init(allocator);
     for (atlases) |atlas| {
-        const atlasTexture = sdl.IMG_LoadTexture(renderer, @ptrCast(atlas.path)) orelse {
-            sdl.SDL_Log("Unable to load textutre: %s", sdl.IMG_GetError());
+        // TODO: dynmic size atlas support use lodepng_inspect
+        const imageW: c_int = 32;
+        const imageH: c_int = 32;
+
+        var buffer: [*c]u8 = undefined;
+        const pitch: c_int = @intCast(imageW * @sizeOf(u32));
+        const result = lodepng.lodepng_decode32_file(&buffer, @ptrCast(@constCast(&@as(c_uint, imageW))), @ptrCast(@constCast(&@as(c_uint, imageH))), @ptrCast(atlas.path));
+        defer std.c.free(buffer);
+        if (result != 0) {
+            std.debug.print("decoder error {}, {s}\n", .{ result, lodepng.lodepng_error_text(result) });
+            return error.PngError;
+        }
+        const atlasTexture = sdl.SDL_CreateTexture(renderer, sdl.SDL_PIXELFORMAT_ARGB8888, sdl.SDL_TEXTUREACCESS_STREAMING, imageH, imageW) orelse {
+            sdl.SDL_Log("Unable to create textutre: %s", sdl.IMG_GetError());
             return error.IMGLoadTextureError;
         };
+        var sdlPixels: []u32 = try allocator.alloc(u32, @intCast(imageW * imageH * @sizeOf(u32)));
+        defer allocator.free(sdlPixels);
+
+        // plot the pixels of the PNG file
+        var y: u16 = 0;
+        while (y < imageH) : (y += 1) {
+            var x: u16 = 0;
+            while (x < imageW) : (x += 1) {
+                // get RGBA components
+                var r: u8 = buffer[@intCast(4 * y * imageW + 4 * x + 0)]; // red
+                var g: u8 = buffer[@intCast(4 * y * imageW + 4 * x + 1)]; // green
+                var b: u8 = buffer[@intCast(4 * y * imageW + 4 * x + 2)]; // blue
+                const a: u8 = buffer[@intCast(4 * y * imageW + 4 * x + 3)]; // alpha
+
+                r = @intCast((@as(u16, a) * r + (255 - a)) / @as(u16, 255));
+                g = @intCast((@as(u16, a) * g + (255 - a)) / @as(u16, 255));
+                b = @intCast((@as(u16, a) * b + (255 - a)) / @as(u16, 255));
+
+                // give the color value to the pixel of the screenbuffer
+                sdlPixels[@intCast(y * imageW + x)] = @as(u32, 65536) * r + @as(u32, 256) * g + b;
+            }
+        }
+
+        // render the pixels to e screen
+        _ = sdl.SDL_UpdateTexture(atlasTexture, &sdl.SDL_Rect{
+            .x = @intCast(0),
+            .y = @intCast(0),
+            .w = @intCast(imageW),
+            .h = @intCast(imageH),
+        }, @ptrCast(sdlPixels), pitch);
+
         try atlasMap.put(atlas.id, atlasTexture);
     }
 
@@ -136,9 +183,9 @@ fn gameLoop(allocator: std.mem.Allocator, fps: u16, renderer: *sdl.SDL_Renderer,
         // use to show FPS
         if (delay < 0) {
             delay = elapsedMS;
-            std.debug.print("FPS: {d}\n", .{1000.0 / delay});
+            // std.debug.print("FPS: {d}\n", .{1000.0 / delay});
         } else {
-            std.debug.print("FPS: {d}\n", .{1000.0 / (elapsedMS + delay)});
+            // std.debug.print("FPS: {d}\n", .{1000.0 / (elapsedMS + delay)});
         }
 
         sdl.SDL_Delay(@as(u32, @intFromFloat(delay)));

@@ -1,4 +1,5 @@
-const game = @import("api.zig");
+const api = @import("api.zig");
+const common = @import("common.zig");
 const std = @import("std");
 
 pub fn main() !void {
@@ -15,7 +16,7 @@ pub fn main() !void {
     const screenWidth = intArgsHandler(&argsIterator, 640, "width");
     const screenHeight = intArgsHandler(&argsIterator, 480, "height");
     const fps = intArgsHandler(&argsIterator, 60, "fps");
-    try game.Example.start(screenWidth, screenHeight, fps, allocator);
+    try Example.start(screenWidth, screenHeight, fps, allocator);
 }
 
 fn intArgsHandler(argsIterator: *std.process.ArgIterator, defaultSize: u16, str: []const u8) u16 {
@@ -31,3 +32,63 @@ fn intArgsHandler(argsIterator: *std.process.ArgIterator, defaultSize: u16, str:
     }
     return size;
 }
+pub const Example = struct {
+    var screenWidth: u16 = undefined;
+    var screenHeight: u16 = undefined;
+
+    pub fn start(width: u16, height: u16, fps: u16, allocator: std.mem.Allocator) !void {
+        const atlases = try allocator.alloc(common.Atlas, 1);
+        atlases[0].id = "tiles";
+        atlases[0].path = "assets/dirt.png";
+        defer allocator.free(atlases);
+
+        const fonts = try allocator.alloc(common.Font, 1);
+        fonts[0].id = "fonts";
+        fonts[0].path = "assets/ObliviousFont.ttf";
+        defer allocator.free(fonts);
+
+        screenHeight = height;
+        screenWidth = width;
+
+        const apiExample: api.Api = api.Api{ .logicFn = exampleLogic };
+        try apiExample.start(width, height, fps, atlases, fonts, allocator);
+    }
+
+    fn exampleLogic(input: ?common.InputEvent, allocator: std.mem.Allocator) *common.GraphicalGameState {
+        const camera = common.Rectangle{
+            .x = 0,
+            .y = 0,
+            .w = screenWidth,
+            .h = screenHeight,
+        };
+        var position = common.Point{ .x = 0, .y = 0 };
+
+        if (input) |in| {
+            position = switch (in.eventType) {
+                common.EventType.MOTION => common.Point{
+                    .x = in.position.?.x,
+                    .y = in.position.?.y,
+                },
+                common.EventType.CLICK => common.Point{
+                    .x = in.position.?.x,
+                    .y = in.position.?.y,
+                },
+            };
+        }
+        const obj = common.GraphicalObject.init(allocator, position, common.Rectangle{
+            .x = 0,
+            .y = 0,
+            .w = 32,
+            .h = 32,
+        }, "tiles") catch unreachable;
+        var objects = [_]*common.GraphicalObject{obj};
+        const state = common.GraphicalGameState.init(
+            allocator,
+            &objects,
+            null,
+            camera,
+        ) catch unreachable;
+
+        return state;
+    }
+};
