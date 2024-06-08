@@ -79,13 +79,18 @@ fn initSdl() !void {
 fn loadAtlases(allocator: std.mem.Allocator, renderer: *sdl.SDL_Renderer, atlases: []common.Atlas) !std.StringHashMap(*sdl.SDL_Texture) {
     var atlasMap = std.StringHashMap(*sdl.SDL_Texture).init(allocator);
     for (atlases) |atlas| {
-        // TODO: dynmic size atlas support use lodepng_inspect
-        const imageW: c_int = 32;
-        const imageH: c_int = 32;
-
+        const w: [*c]c_uint = @ptrCast(@alignCast(std.c.malloc(@sizeOf(c_uint)) orelse return undefined));
+        const h: [*c]c_uint = @ptrCast(@alignCast(std.c.malloc(@sizeOf(c_uint)) orelse return undefined));
+        defer {
+            std.c.free(w);
+            std.c.free(h);
+        }
         var buffer: [*c]u8 = undefined;
+        const result = lodepng.lodepng_decode32_file(&buffer, w, h, @ptrCast(atlas.path));
+        std.debug.print("atlas width: {}, height: {}\n", .{ w.*, h.* });
+        const imageW: c_int = @intCast(w.*);
+        const imageH: c_int = @intCast(h.*);
         const pitch: c_int = @intCast(imageW * @sizeOf(u32));
-        const result = lodepng.lodepng_decode32_file(&buffer, @ptrCast(@constCast(&@as(c_uint, imageW))), @ptrCast(@constCast(&@as(c_uint, imageH))), @ptrCast(atlas.path));
         defer std.c.free(buffer);
         if (result != 0) {
             std.debug.print("decoder error {}, {s}\n", .{ result, lodepng.lodepng_error_text(result) });
