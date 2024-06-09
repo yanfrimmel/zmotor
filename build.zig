@@ -13,7 +13,6 @@ pub fn build(b: *std.Build) void {
 
     exe.linkLibC();
     exe.linkSystemLibrary("SDL2");
-    exe.linkSystemLibrary("SDL2_image");
 
     exe.addCSourceFiles(.{ .files = &[_][]const u8{"src/lodepng.c"}, .flags = &[_][]const u8{ "-g", "-O3" } });
     exe.addIncludePath(b.path("src/"));

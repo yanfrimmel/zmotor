@@ -1,6 +1,5 @@
 const sdl = @cImport({
     @cInclude("SDL2/SDL.h");
-    @cInclude("SDL2/SDL_image.h");
     @cInclude("SDL2/SDL_ttf.h");
 });
 const lodepng = @cImport({
@@ -15,7 +14,6 @@ const std = @import("std");
 pub fn start(allocator: std.mem.Allocator, width: u16, height: u16, fps: u16, atlases: []common.Atlas, fonts: []common.Font, logic: *const common.LogicFuncType) !void {
     try initSdl();
     defer sdl.SDL_Quit();
-    defer sdl.IMG_Quit();
     defer sdl.TTF_Quit();
 
     const window = try initWindow(width, height);
@@ -65,11 +63,6 @@ fn initSdl() !void {
         return error.SDLInitializationFailed;
     }
 
-    if ((sdl.IMG_Init(sdl.IMG_INIT_PNG) & sdl.IMG_INIT_PNG) == 0) {
-        sdl.SDL_Log("Unable to initialize SDL Image: %s", sdl.IMG_GetError());
-        return error.SDLInitializationFailed;
-    }
-
     if (sdl.TTF_Init() == -1) {
         sdl.SDL_Log("SDL_ttf could not initialize! SDL_ttf Error: %s", sdl.TTF_GetError());
         return error.SDLInitializationFailed;
@@ -97,7 +90,7 @@ fn loadAtlases(allocator: std.mem.Allocator, renderer: *sdl.SDL_Renderer, atlase
             return error.PngError;
         }
         const atlasTexture = sdl.SDL_CreateTexture(renderer, sdl.SDL_PIXELFORMAT_ARGB8888, sdl.SDL_TEXTUREACCESS_STREAMING, imageH, imageW) orelse {
-            sdl.SDL_Log("Unable to create textutre: %s", sdl.IMG_GetError());
+            sdl.SDL_Log("Unable to create textutre: %s", sdl.SDL_GetError());
             return error.IMGLoadTextureError;
         };
         var sdlPixels: []u32 = try allocator.alloc(u32, @intCast(imageW * imageH * @sizeOf(u32)));
