@@ -240,3 +240,29 @@ fn castFromSDL_MouseButtonEvent(button: sdl.SDL_MouseButtonEvent) common.Point {
         .y = if (button.y > 0) @intCast(button.y) else 0,
     };
 }
+
+test "test loadAtlases" {
+    std.testing.refAllDecls(@This());
+
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    const allocator = gpa.allocator();
+    defer std.debug.assert(gpa.deinit() == .ok);
+
+    try initSdl();
+    defer sdl.SDL_Quit();
+    defer sdl.TTF_Quit();
+
+    const window = try initWindow(1000, 1000);
+    defer sdl.SDL_DestroyWindow(window);
+
+    const renderer = try initRenderer(window);
+    defer sdl.SDL_DestroyRenderer(renderer);
+
+    const atlases = try allocator.alloc(common.Atlas, 1);
+    atlases[0].id = "tiles";
+    atlases[0].path = "assets/dirt.png";
+    defer allocator.free(atlases);
+    var atlasMap = try loadAtlases(allocator, renderer, atlases);
+    defer deinitAtlasesMap(&atlasMap);
+    try std.testing.expect(atlasMap.get("tiles") != null);
+}
