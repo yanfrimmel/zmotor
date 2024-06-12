@@ -32,6 +32,7 @@ fn intArgsHandler(argsIterator: *std.process.ArgIterator, defaultSize: u16, str:
     }
     return size;
 }
+
 pub const Example = struct {
     var screenWidth: u16 = undefined;
     var screenHeight: u16 = undefined;
