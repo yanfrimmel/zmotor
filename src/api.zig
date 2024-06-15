@@ -6,7 +6,7 @@ const std = @import("std");
 pub const Api = struct {
     logicFn: common.LogicFuncType,
 
-    pub fn start(self: Api, width: u16, height: u16, fps: u16, atlases: []common.Atlas, fonts: []common.Font, allocator: std.mem.Allocator) !void {
-        try engine.start(allocator, width, height, fps, atlases, fonts, self.logicFn);
+    pub fn start(self: Api, width: u16, height: u16, fps: u16, atlases: []common.Atlas, allocator: std.mem.Allocator) !void {
+        try engine.start(allocator, width, height, fps, atlases, self.logicFn);
     }
 };

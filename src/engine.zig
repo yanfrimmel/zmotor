@@ -1,6 +1,5 @@
 const sdl = @cImport({
     @cInclude("SDL2/SDL.h");
-    @cInclude("SDL2/SDL_ttf.h");
 });
 const lodepng = @cImport({
     @cDefine("LODEPNG_NO_COMPILE_CPP", "1");
@@ -11,10 +10,9 @@ const assert = @import("std").debug.assert;
 const common = @import("common.zig");
 const std = @import("std");
 
-pub fn start(allocator: std.mem.Allocator, width: u16, height: u16, fps: u16, atlases: []common.Atlas, fonts: []common.Font, logic: *const common.LogicFuncType) !void {
+pub fn start(allocator: std.mem.Allocator, width: u16, height: u16, fps: u16, atlases: []common.Atlas, logic: *const common.LogicFuncType) !void {
     try initSdl();
     defer sdl.SDL_Quit();
-    defer sdl.TTF_Quit();
 
     const window = try initWindow(width, height);
     defer sdl.SDL_DestroyWindow(window);
@@ -22,22 +20,7 @@ pub fn start(allocator: std.mem.Allocator, width: u16, height: u16, fps: u16, at
     const renderer = try initRenderer(window);
     defer sdl.SDL_DestroyRenderer(renderer);
 
-    try gameLoop(allocator, fps, renderer, atlases, fonts, logic);
-}
-
-fn renderText(font: []const u8, text: []const u8, color: sdl.SDL_Color) !void {
-    _ = font;
-    _ = text;
-    _ = color;
-}
-
-// ptsize - font point size
-fn getFontFromFile(file: []const u8, ptsize: u8) *sdl.TTF_Font {
-    const gFont = sdl.TTF_OpenFont(file, ptsize) orelse {
-        sdl.SDL_Log("Failed to load font file: %s", file);
-        return error.TTFLoadFontError;
-    };
-    return gFont;
+    try gameLoop(allocator, fps, renderer, atlases, logic);
 }
 
 fn initRenderer(window: *sdl.SDL_Window) !*sdl.SDL_Renderer {
@@ -60,11 +43,6 @@ fn initWindow(width: u16, height: u16) !*sdl.SDL_Window {
 fn initSdl() !void {
     if (sdl.SDL_Init(sdl.SDL_INIT_VIDEO | sdl.SDL_INIT_EVENTS) < 0) {
         sdl.SDL_Log("Unable to initialize SDL: %s", sdl.SDL_GetError());
-        return error.SDLInitializationFailed;
-    }
-
-    if (sdl.TTF_Init() == -1) {
-        sdl.SDL_Log("SDL_ttf could not initialize! SDL_ttf Error: %s", sdl.TTF_GetError());
         return error.SDLInitializationFailed;
     }
 }
@@ -138,10 +116,9 @@ fn deinitAtlasesMap(atlasMap: *std.StringHashMap(*sdl.SDL_Texture)) void {
     atlasMap.deinit();
 }
 
-fn gameLoop(allocator: std.mem.Allocator, fps: u16, renderer: *sdl.SDL_Renderer, atlases: []common.Atlas, fonts: []common.Font, logic: *const common.LogicFuncType) !void {
+fn gameLoop(allocator: std.mem.Allocator, fps: u16, renderer: *sdl.SDL_Renderer, atlases: []common.Atlas, logic: *const common.LogicFuncType) !void {
     var atlasMap = try loadAtlases(allocator, renderer, atlases);
     defer deinitAtlasesMap(&atlasMap);
-    _ = fonts; // TODO implement fonts
     var quit = false;
     while (!quit) {
         const startP = sdl.SDL_GetPerformanceCounter();
@@ -250,7 +227,6 @@ test "test loadAtlases" {
 
     try initSdl();
     defer sdl.SDL_Quit();
-    defer sdl.TTF_Quit();
 
     const window = try initWindow(1000, 1000);
     defer sdl.SDL_DestroyWindow(window);

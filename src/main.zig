@@ -43,16 +43,11 @@ pub const Example = struct {
         atlases[0].path = "assets/dirt.png";
         defer allocator.free(atlases);
 
-        const fonts = try allocator.alloc(common.Font, 1);
-        fonts[0].id = "fonts";
-        fonts[0].path = "assets/ObliviousFont.ttf";
-        defer allocator.free(fonts);
-
         screenHeight = height;
         screenWidth = width;
 
         const apiExample: api.Api = api.Api{ .logicFn = exampleLogic };
-        try apiExample.start(width, height, fps, atlases, fonts, allocator);
+        try apiExample.start(width, height, fps, atlases, allocator);
     }
 
     fn exampleLogic(input: ?common.InputEvent, allocator: std.mem.Allocator) *common.GraphicalGameState {
